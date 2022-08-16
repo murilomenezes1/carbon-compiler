@@ -5,28 +5,28 @@ import re
 string = sys.argv[1].replace(" ","")
 res = 0
 
-for i in range(0,len(string)):
+vector = re.split("(\D)", string) #splits string on every non-digit char (+ or -)
 
-	if (i == 0) and (string[i] == "+" or string[i] == "-"):
+for i in range(0, len(vector)):
+	if i == 0 and (vector[i] != "+" and vector[i] != "-"):
 
-		sys.stderr.write("String must begin with a number.\n")
-		raise ValueError
+		res += int(vector[i])
 
-	if (i == 0) and (string[i] != "+" and string[i] != "-"): 
+	elif vector[i] == "+":
 
-		res += int(string[i])
+		res += int(vector[i+1])
 
-	elif string[i] == "+" and (string[i+1] != "+" and string[i+1] != "-"):
+	elif vector[i] == "-":
 
-		res += int(string[i+1])
-
-	elif string[i] == "-" and (string[i+1] != "+" and string[i+1] != "-"):
-
-		res -= int(string[i+1])
+		res -= int(vector[i+1])
 
 
 
 print(res)
+
+
+
+
 
 
 
