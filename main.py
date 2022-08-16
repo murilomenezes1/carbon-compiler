@@ -5,28 +5,30 @@ import re
 string = sys.argv[1].replace(" ","")
 res = 0
 
-if "+" not in string or "-" not in string:
+if "+" not in string and "-" not in string:
 
-	raise ValueError
+	sys.stderr.write("missing operator.\n")
 
-vector = re.split("(\D)", string) #splits string on every non-digit char (+ or -)
+else:
 
-for i in range(0, len(vector)):
-	if i == 0 and (vector[i] != "+" and vector[i] != "-"):
+	vector = re.split("(\D)", string) #splits string on every non-digit char (+ or -)
 
-		res += int(vector[i])
+	for i in range(0, len(vector)):
+		if i == 0 and (vector[i] != "+" and vector[i] != "-"):
 
-	elif vector[i] == "+":
+			res += int(vector[i])
 
-		res += int(vector[i+1])
+		elif vector[i] == "+":
 
-	elif vector[i] == "-":
+			res += int(vector[i+1])
 
-		res -= int(vector[i+1])
+		elif vector[i] == "-":
+
+			res -= int(vector[i+1])
 
 
 
-print(res)
+	print(res)
 
 
 
