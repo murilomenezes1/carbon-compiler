@@ -5,6 +5,10 @@ import re
 string = sys.argv[1].replace(" ","")
 res = 0
 
+if "+" not in string or "-" not in string:
+
+	raise ValueError
+
 vector = re.split("(\D)", string) #splits string on every non-digit char (+ or -)
 
 for i in range(0, len(vector)):
