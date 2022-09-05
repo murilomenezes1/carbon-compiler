@@ -24,13 +24,15 @@ class Tokenizer():
 
 
 
-			if "+" not in self.source and "-" not in self.source:
+			if "+" not in self.source and "-" not in self.source and "*" not in self.source and "/" not in self.source:
+
+				print(self.source)
 
 				self.next = Token("INVALID", "INVALID")
 
 				return self.next
 
-			if self.source[self.position] != '+' and self.source[self.position] != '-' and self.source[self.position] != " ":
+			if self.source[self.position] != '+' and self.source[self.position] != '-' and self.source[self.position] != " " and self.source[self.position] != "*" and self.source[self.position] != "/":
 				if isinstance(int(self.source[self.position]), int):
 					num += self.source[self.position]
 
@@ -38,7 +40,7 @@ class Tokenizer():
 					for i in range(self.position, len(self.source)):
 						if not EON:
 							if i != (len(self.source) - 1):
-								if self.source[i+1] != '+' and self.source[i+1] != '-':
+								if self.source[i+1] != '+' and self.source[i+1] != '-' and self.source[i+1] != "*" and self.source[i+1] != "/":
 									
 									num += self.source[i+1]
 
@@ -77,13 +79,35 @@ class Tokenizer():
 
 			elif self.source[self.position] == " ":
 				self.next= Token("BLANK", self.source[self.position])
+
+
+				while self.source[self.position + 1] == " ":
+					self.position += 1
+				
 				self.position += 1
+
+				return self.next
+
+			elif self.source[self.position] == "*":
+				self.next = Token("MULT", self.source[self.position])
+
 
 				while self.source[self.position + 1] == " ":
 					self.position += 1
 
+				self.position += 1
+
 				return self.next
 
+			elif self.source[self.position] == "/":
+				self.next = Token("DIV", self.source[self.position])
+
+				while self.source[self.position + 1] == " ":
+					self.position += 1
+
+				self.position += 1
+
+				return self.next
 
 			if num != "" and EON == True:
 
@@ -96,11 +120,12 @@ class Tokenizer():
 		else:
 
 			self.next = Token("EOF", None)
+			return self.next
 
 class Parser():
 
 	@staticmethod
-	def parseExpression(token):
+	def parseTerm(token):
 
 		output = 0
 		data = token.selectNext()
@@ -118,59 +143,87 @@ class Parser():
 			output = int(token.next.value)
 			token.selectNext()
 
-			if token.next.data_type == "PLUS" or token.next.data_type == "MINUS" or token.next.data_type == "BLANK":
+			while token.next.data_type == "MULT" or token.next.data_type == "DIV":
 
-				while token.next.data_type == "PLUS" or token.next.data_type == "MINUS":
-
-					if token.next.data_type == "PLUS":
-
-						token.selectNext()
-
-						if token.next.data_type == "INT":
-
-							output += int(token.next.value)
-
-						elif token.next.data_type == "BLANK":
-
-							output += 0 
-
-						else:
-							raise Exception("Not a number (sum).")
-
-					if token.next.data_type == "MINUS":
-
-						token.selectNext()
-
-						if token.next.data_type == "INT":
-
-							output -= int(token.next.value)
-
-						elif token.next.data_type == "BLANK":
-
-							output -= 0 
-	 
-						else:
-
-							sys.stderr.write("Not a number (sub).")
+				if token.next.data_type == "MULT":
 
 					token.selectNext()
 
-				return output
+					if token.next.data_type == "INT":
 
-			else:
+						output *= int(token.next.value)
 
-				raise ValueError("No operand")
+					elif token.next.data_type == "BLANK":
+
+						output += 0 
+
+					else:
+						raise Exception("Not a number (sum).")
+
+				if token.next.data_type == "DIV":
+
+					token.selectNext()
+
+					if token.next.data_type == "INT":
+
+						output //= int(token.next.value)
+
+					elif token.next.data_type == "BLANK":
+
+						output -= 0 
+ 
+					else:
+
+						sys.stderr.write("Not a number (sub).")
+
+				token.selectNext()
+
+			return output
+
 		
 		else:
 
 			sys.stderr.write("invalid expression starter.")
 
 	@staticmethod
+	def parseExpression(token):
+
+		output = Parser.parseTerm(token)
+
+		while token.next.data_type == "PLUS" or token.next.data_type == "MINUS":
+
+			if token.next.data_type == "PLUS":
+
+				# token.selectNext()
+				output += Parser.parseTerm(token)
+
+			if token.next.data_type == "MINUS":
+
+				# token.selectNext()
+				output -= Parser.parseTerm(token)
+
+
+		return output
+
+
+
+	@staticmethod
 	def run(code):
 		token = Tokenizer(code)
 		print(Parser.parseExpression(token))
 
-Parser.run(sys.argv[1])
+
+
+
+
+class PrePro():
+
+	@staticmethod
+	def filter(code):
+		return re.sub(r"//[^\r\n]*$","",code)
+
+
+Parser.run(PrePro.filter(sys.argv[1]))
 
 
 
