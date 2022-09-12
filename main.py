@@ -199,11 +199,8 @@ class Parser():
 	@staticmethod
 	def parseFactor(token):
 
-		# data = 	Parser.token.selectNext()
-		# output = 0
 
-		if token.next.data_type == "INT":
-			
+		if token.next.data_type == "INT":		
 			
 			output = token.next.value
 			token.selectNext()
@@ -226,9 +223,13 @@ class Parser():
 
 			if 	token.next.data_type != "CLOSEBR":
 
-				raise ValueError("Missing Closing parentheses.")
+				raise ValueError("Missing Closing parenthesis.")
 
 			token.selectNext()
+
+		elif token.next.data_type == "CLOSEBR":
+
+			raise ValueError("Missing Opening Paranthesis.")
 
 		return output
 
@@ -238,7 +239,16 @@ class Parser():
 	def run(code):
 		token = Tokenizer(code)
 		token.selectNext()
-		print(Parser.parseExpression(token))
+
+		result = Parser.parseExpression(token)
+
+		if result != None and token.next.data_type == "EOF":
+			
+			print(result)
+
+		else:
+
+			raise ValueError("Invalid Expression")
 
 
 
