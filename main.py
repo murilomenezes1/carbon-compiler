@@ -171,7 +171,7 @@ class Parser():
 			elif token.next.data_type == "DIV":
 
 				token.selectNext()
-				output /= Parser.parseFactor(token)
+				output //= Parser.parseFactor(token)
 
 		return output
 
