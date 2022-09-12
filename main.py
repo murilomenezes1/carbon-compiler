@@ -32,7 +32,14 @@ class Tokenizer():
 
 				return self.next
 
-			if self.source[self.position] != '+' and self.source[self.position] != '-' and self.source[self.position] != " " and self.source[self.position] != "*" and self.source[self.position] != "/":
+			if (self.source[self.position] != '+' 
+			and self.source[self.position] != '-' 
+			and self.source[self.position] != " " 
+			and self.source[self.position] != "*" 
+			and self.source[self.position] != "/"
+			and self.source[self.position] != "("
+			and self.source[self.position] != ")"):
+
 				if isinstance(int(self.source[self.position]), int):
 					num += self.source[self.position]
 
@@ -40,7 +47,7 @@ class Tokenizer():
 					for i in range(self.position, len(self.source)):
 						if not EON:
 							if i != (len(self.source) - 1):
-								if self.source[i+1] != '+' and self.source[i+1] != '-' and self.source[i+1] != "*" and self.source[i+1] != "/":
+								if self.source[i+1] != '+' and self.source[i+1] != '-' and self.source[i+1] != "*" and self.source[i+1] != "/" and self.source[i+1] != "(" and self.source[i+1] != ")":
 									
 									num += self.source[i+1]
 
@@ -109,9 +116,30 @@ class Tokenizer():
 
 				return self.next
 
+			elif self.source[self.position] == "(":
+				self.next = Token("OPENBR", self.source[self.position])
+
+				while self.source[self.position + 1] == " ":
+					self.position += 1
+
+				self.position += 1
+
+				return self.next
+
+			elif self.source[self.position] == ")":
+				self.next = Token("CLOSEBR", self.source[self.position])
+
+				if self.position + 1 < len(self.source):	
+					while self.source[self.position + 1] == " ":
+						self.position += 1
+
+				self.position += 1
+
+				return self.next
+
 			if num != "" and EON == True:
 
-				self.next = Token("INT", num)
+				self.next = Token("INT", int(num))
 				self.position += len(num)
 				num = ""
 				EON = False
@@ -124,66 +152,29 @@ class Tokenizer():
 
 class Parser():
 
+	def __init__(self,token):
+
+		self.token = token
+
 	@staticmethod
 	def parseTerm(token):
 
-		output = 0
-		data = token.selectNext()
+		output = Parser.parseFactor(token)
 
-		if token.next.data_type == "INVALID":
-
-			raise ValueError("No Operand")
-
-		while token.next.data_type == "BLANK":
-
-			token.selectNext()
-
-		if token.next.data_type == "INT":
-
-			output = int(token.next.value)
-			token.selectNext()
-
-			while token.next.data_type == "MULT" or token.next.data_type == "DIV":
-
-				if token.next.data_type == "MULT":
-
-					token.selectNext()
-
-					if token.next.data_type == "INT":
-
-						output *= int(token.next.value)
-
-					elif token.next.data_type == "BLANK":
-
-						output += 0 
-
-					else:
-						raise Exception("Not a number (sum).")
-
-				if token.next.data_type == "DIV":
-
-					token.selectNext()
-
-					if token.next.data_type == "INT":
-
-						output //= int(token.next.value)
-
-					elif token.next.data_type == "BLANK":
-
-						output -= 0 
- 
-					else:
-
-						sys.stderr.write("Not a number (sub).")
+		while token.next.data_type == "MULT" or token.next.data_type == "DIV":
+			
+			if token.next.data_type == "MULT":
 
 				token.selectNext()
+				output *= Parser.parseFactor(token)
 
-			return output
+			elif token.next.data_type == "DIV":
 
-		
-		else:
+				token.selectNext()
+				output /= Parser.parseFactor(token)
 
-			sys.stderr.write("invalid expression starter.")
+		return output
+
 
 	@staticmethod
 	def parseExpression(token):
@@ -194,14 +185,50 @@ class Parser():
 
 			if token.next.data_type == "PLUS":
 
-				# token.selectNext()
+				token.selectNext()
 				output += Parser.parseTerm(token)
 
 			if token.next.data_type == "MINUS":
 
-				# token.selectNext()
+				token.selectNext()
 				output -= Parser.parseTerm(token)
 
+
+		return output
+
+	@staticmethod
+	def parseFactor(token):
+
+		# data = 	Parser.token.selectNext()
+		# output = 0
+
+		if token.next.data_type == "INT":
+			
+			
+			output = token.next.value
+			token.selectNext()
+			
+
+		elif token.next.data_type == "PLUS":
+
+			token.selectNext()
+			output = Parser.parseFactor(token)
+
+		elif token.next.data_type == "MINUS":
+
+			token.selectNext()
+			output = -Parser.parseFactor(token)
+
+		elif token.next.data_type == "OPENBR":
+
+			token.selectNext()
+			output = Parser.parseExpression(token)
+
+			if 	token.next.data_type != "CLOSEBR":
+
+				raise ValueError("Missing Closing parentheses.")
+
+			token.selectNext()
 
 		return output
 
@@ -210,6 +237,7 @@ class Parser():
 	@staticmethod
 	def run(code):
 		token = Tokenizer(code)
+		token.selectNext()
 		print(Parser.parseExpression(token))
 
 
