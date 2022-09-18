@@ -2,6 +2,76 @@ import sys
 import re
 
 
+
+
+class Node():
+
+	def __init__(self,variant,nodes = []):
+
+		self.value = variant
+		self.children = nodes
+
+	def Evaluate(self):
+
+		pass
+
+
+
+
+class BinOp(Node):
+
+	def Evaluate(self):
+
+		first_child = self.children[0].Evaluate()
+		second_child = self.children[1].Evaluate()
+
+
+		if self.value == "+":
+
+			return first_child + second_child
+
+		elif self.value == "-":
+
+			return first_child - second_child
+
+		elif self.value == "*":
+
+			return first_child * second_child
+
+		elif self.value == "/":
+
+			return first_child // second_child
+
+class UnOp(Node):
+
+
+	def Evaluate(self):
+
+		child = self.children[0].Evaluate()
+
+		if self.value == "+":
+
+			return child
+
+		elif self.value == "-":
+
+			return -child
+
+
+class IntVal(Node):
+
+	def Evaluate(self):
+
+		return int(self.value)
+
+
+class NoOp(Node):
+
+	def Evaluate(self):
+
+		pass
+
+
 class Token():
 
 	def __init__(self, data_type, value):
@@ -21,6 +91,11 @@ class Tokenizer():
 		EON = False
 
 		if self.position < len(self.source):
+
+
+			while self.source[self.position] == " ":
+
+				self.position += 1
 
 
 
@@ -147,14 +222,10 @@ class Tokenizer():
 
 		else:
 
-			self.next = Token("EOF", None)
+			self.next = Token("EOF", "EOF")
 			return self.next
 
 class Parser():
-
-	def __init__(self,token):
-
-		self.token = token
 
 	@staticmethod
 	def parseTerm(token):
@@ -165,13 +236,16 @@ class Parser():
 			
 			if token.next.data_type == "MULT":
 
+				op = token.next.value
+
 				token.selectNext()
-				output *= Parser.parseFactor(token)
+				output = BinOp(op, [output, Parser.parseFactor(token)])
 
 			elif token.next.data_type == "DIV":
 
+				op = token.next.value
 				token.selectNext()
-				output //= Parser.parseFactor(token)
+				output = BinOp(op, [output, Parser.parseFactor(token)])
 
 		return output
 
@@ -185,13 +259,16 @@ class Parser():
 
 			if token.next.data_type == "PLUS":
 
+				op = token.next.value
+
 				token.selectNext()
-				output += Parser.parseTerm(token)
+				output = BinOp(op, [output,Parser.parseTerm(token)])
 
 			if token.next.data_type == "MINUS":
 
+				op = token.next.value
 				token.selectNext()
-				output -= Parser.parseTerm(token)
+				output = BinOp(op, [output, Parser.parseTerm(token)])
 
 
 		return output
@@ -202,19 +279,19 @@ class Parser():
 
 		if token.next.data_type == "INT":		
 			
-			output = token.next.value
+			output = IntVal(token.next.value, [token.next.value])
 			token.selectNext()
 			
 
 		elif token.next.data_type == "PLUS":
 
 			token.selectNext()
-			output = Parser.parseFactor(token)
+			output = UnOp("+", [Parser.parseFactor(token)])
 
 		elif token.next.data_type == "MINUS":
 
 			token.selectNext()
-			output = -Parser.parseFactor(token)
+			output = UnOp("-", [Parser.parseFactor(token)])
 
 		elif token.next.data_type == "OPENBR":
 
@@ -244,7 +321,7 @@ class Parser():
 
 		if result != None and token.next.data_type == "EOF":
 			
-			print(result)
+			print(result.Evaluate())
 
 		else:
 
@@ -261,7 +338,15 @@ class PrePro():
 		return re.sub(r"//[^\r\n]*$","",code)
 
 
-Parser.run(PrePro.filter(sys.argv[1]))
+
+
+with open(sys.argv[1], "r") as file:
+
+	Parser.run(file.read())
+
+
+
+
 
 
 
