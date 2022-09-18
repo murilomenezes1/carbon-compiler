@@ -99,13 +99,12 @@ class Tokenizer():
 
 
 
-			if "+" not in self.source and "-" not in self.source and "*" not in self.source and "/" not in self.source:
+			# if "+" not in self.source and "-" not in self.source and "*" not in self.source and "/" not in self.source:
 
-				print(self.source)
 
-				self.next = Token("INVALID", "INVALID")
+			# 	self.next = Token("INVALID", "INVALID")
 
-				return self.next
+			# 	return self.next
 
 			if (self.source[self.position] != '+' 
 			and self.source[self.position] != '-' 
@@ -276,7 +275,6 @@ class Parser():
 	@staticmethod
 	def parseFactor(token):
 
-
 		if token.next.data_type == "INT":		
 			
 			output = IntVal(token.next.value, [token.next.value])
@@ -308,13 +306,14 @@ class Parser():
 
 			raise ValueError("Missing Opening Paranthesis.")
 
+
 		return output
 
 
 
 	@staticmethod
 	def run(code):
-		token = Tokenizer(code)
+		token = Tokenizer(PrePro.filter(code))
 		token.selectNext()
 
 		result = Parser.parseExpression(token)
