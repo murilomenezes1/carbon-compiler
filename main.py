@@ -152,9 +152,9 @@ class Tokenizer():
 						text += self.source[self.position]
 						self.position += 1
 
-					if text == "Printf":
+					if text == "Print":
 
-						self.next = Token("PRINTF", text)
+						self.next = Token("PRINT", text)
 
 					else:
 
@@ -369,7 +369,7 @@ class Parser():
 
 				raise ValueError("Missing Value.")
 
-		elif token.next.data_type == "PRINTF":
+		elif token.next.data_type == "PRINT":
 			
 			token.selectNext()
 
@@ -380,7 +380,7 @@ class Parser():
 
 				if token.next.data_type == "CLOSEP":
 
-					output = Printer("PRINTF", [exp])
+					output = Printer("PRINT", [exp])
 					token.selectNext()
 
 					if token.next.data_type == "SEMI_C":
