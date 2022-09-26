@@ -1,6 +1,5 @@
+
 {
-x = 1;
-y = 2;
-z = x + y;
-Print(z);
-}	
+    // Teste 
+    Print(1);
+}

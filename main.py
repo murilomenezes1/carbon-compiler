@@ -508,7 +508,7 @@ class Parser():
 	@staticmethod
 	def run(code):
 
-		string = PrePro.filter(code).replace("\n","")
+		string = PrePro.filter(code)
 		token = Tokenizer(string)
 		token.selectNext()
 
@@ -531,7 +531,14 @@ class PrePro():
 
 	@staticmethod
 	def filter(code):
-		return re.sub(r"//[^\r\n]*$","",code)
+		f = re.sub(re.compile("//.*?\n"),"",code)
+
+		f = re.sub("\s+","",f)
+		return f.replace("\n","")
+
+		
+
+
 
 
 
