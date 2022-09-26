@@ -71,6 +71,42 @@ class NoOp(Node):
 
 		pass
 
+symbol_table = {}
+class SymbolTable():
+
+	@staticmethod
+	def getter(k):
+
+		return symbol_table[k]
+
+	@staticmethod
+	def setter(k,v):
+
+		symbol_table[k] = v
+
+
+
+class Identifier(Node):
+
+	def Evaluate(self):
+
+		return SymbolTable.getter(self.value)
+
+
+class Printer(Node):
+
+	def Evaluate(self):
+
+		print(self.children[0].Evaluate())
+
+
+class Assignment(Node):
+
+	def Evaluate(self):
+
+		SymbolTable.setter(self.children[0], self.children[1].Evaluate())
+
+
 
 class Token():
 
@@ -88,6 +124,7 @@ class Tokenizer():
 	def selectNext(self):
 
 		num = ""
+		text = ""
 		EON = False
 
 		if self.position < len(self.source):
@@ -97,33 +134,47 @@ class Tokenizer():
 
 				self.position += 1
 
-
-
-			# if "+" not in self.source and "-" not in self.source and "*" not in self.source and "/" not in self.source:
-
-
-			# 	self.next = Token("INVALID", "INVALID")
-
-			# 	return self.next
-
 			if (self.source[self.position] != '+' 
 			and self.source[self.position] != '-' 
 			and self.source[self.position] != " " 
 			and self.source[self.position] != "*" 
 			and self.source[self.position] != "/"
 			and self.source[self.position] != "("
-			and self.source[self.position] != ")"):
+			and self.source[self.position] != ")"
+			and self.source[self.position] != "{"
+			and self.source[self.position] != "}"
+			and self.source[self.position] != ";"
+			and self.source[self.position] != "="):
 
-				if isinstance(int(self.source[self.position]), int):
+				if self.source[self.position].isalpha():
+					while self.position < len(self.source) and (self.source[self.position].isalpha() or self.source[self.position].isdigit() or self.source[self.position] == "_"):
+
+						text += self.source[self.position]
+						self.position += 1
+
+					if text == "Printf":
+
+						self.next = Token("PRINTF", text)
+
+					else:
+
+						self.next = Token("IDENT", text)
+
+					return self.next
+
+				if self.source[self.position].isdigit():
 					num += self.source[self.position]
 
 				if self.position != (len(self.source)-1):
 					for i in range(self.position, len(self.source)):
 						if not EON:
 							if i != (len(self.source) - 1):
-								if self.source[i+1] != '+' and self.source[i+1] != '-' and self.source[i+1] != "*" and self.source[i+1] != "/" and self.source[i+1] != "(" and self.source[i+1] != ")":
-									
-									num += self.source[i+1]
+								if self.source[i+1] != '+' and self.source[i+1] != '-' and self.source[i+1] != "*" and self.source[i+1] != "/" and self.source[i+1] != "(" and self.source[i+1] != ")" and self.source[i+1] != "{" and self.source[i+1] != "}" and self.source[i+1] != ";" and self.source[i+1] != "=":
+									if not self.source[i+1].isdigit():
+										EON = True
+
+									else:
+										num += self.source[i+1]
 
 								else:
 
@@ -191,7 +242,7 @@ class Tokenizer():
 				return self.next
 
 			elif self.source[self.position] == "(":
-				self.next = Token("OPENBR", self.source[self.position])
+				self.next = Token("OPENP", self.source[self.position])
 
 				while self.source[self.position + 1] == " ":
 					self.position += 1
@@ -201,7 +252,51 @@ class Tokenizer():
 				return self.next
 
 			elif self.source[self.position] == ")":
+				self.next = Token("CLOSEP", self.source[self.position])
+
+				if self.position + 1 < len(self.source):	
+					while self.source[self.position + 1] == " ":
+						self.position += 1
+
+				self.position += 1
+
+				return self.next
+
+			elif self.source[self.position] == "{":
+				self.next = Token("OPENBR", self.source[self.position])
+
+				if self.position + 1 < len(self.source):	
+					while self.source[self.position + 1] == " ":
+						self.position += 1
+
+				self.position += 1
+
+				return self.next
+
+			elif self.source[self.position] == "}":
 				self.next = Token("CLOSEBR", self.source[self.position])
+
+				if self.position + 1 < len(self.source):	
+					while self.source[self.position + 1] == " ":
+						self.position += 1
+
+				self.position += 1
+
+				return self.next
+
+			elif self.source[self.position] == "=":
+				self.next = Token("EQUAL", self.source[self.position])
+
+				if self.position + 1 < len(self.source):	
+					while self.source[self.position + 1] == " ":
+						self.position += 1
+
+				self.position += 1
+
+				return self.next
+
+			elif self.source[self.position] == ";":
+				self.next = Token("SEMI_C", self.source[self.position])
 
 				if self.position + 1 < len(self.source):	
 					while self.source[self.position + 1] == " ":
@@ -219,12 +314,105 @@ class Tokenizer():
 				EON = False
 				return self.next
 
-		else:
+		
 
-			self.next = Token("EOF", "EOF")
-			return self.next
+		self.next = Token("EOF", "EOF")
+		return self.next
 
 class Parser():
+
+
+	@staticmethod
+	def parseBlock(token):
+
+		nodes = []
+		# token.selectNext()
+
+		if token.next.data_type == "OPENBR":
+
+			# token.selectNext()
+
+			while token.next.data_type != "CLOSEBR":
+
+				nodes.append(Parser.parseStatement(token))
+
+		token.selectNext()
+		return nodes
+
+	@staticmethod
+	def parseStatement(token):
+
+		output = NoOp(None)
+
+		token.selectNext()
+
+		if token.next.data_type == "IDENT":
+
+			output = token.next.value
+			token.selectNext()
+
+			if token.next.data_type == "EQUAL":
+
+				token.selectNext()
+
+				output = Assignment("=",[output,Parser.parseExpression(token)])
+
+				if token.next.data_type == "SEMI_C":
+
+					# token.selectNext()
+					return output
+
+				else:
+					raise ValueError("Missing semi-colon token.")
+
+			else:
+
+				raise ValueError("Missing Value.")
+
+		elif token.next.data_type == "PRINTF":
+			
+			token.selectNext()
+
+			if token.next.data_type == "OPENP":
+
+				token.selectNext()
+				exp = Parser.parseExpression(token)
+
+				if token.next.data_type == "CLOSEP":
+
+					output = Printer("PRINTF", [exp])
+					token.selectNext()
+
+					if token.next.data_type == "SEMI_C":
+
+						token.selectNext()
+						return output
+
+					else:
+
+						raise ValueError("Missing semi-colon token.")
+
+				else:
+
+					raise ValueError("Missing Closing Parenthesis")
+
+			else:
+
+				raise ValueError("Syntax Error (Printf).")
+
+
+		elif token.next.data_type == "SEMI_C":
+
+			token.selectNext()
+			return output
+
+		else:
+
+			raise ValueError("Invalid Expression.")
+
+
+
+
 
 	@staticmethod
 	def parseTerm(token):
@@ -291,20 +479,26 @@ class Parser():
 			token.selectNext()
 			output = UnOp("-", [Parser.parseFactor(token)])
 
-		elif token.next.data_type == "OPENBR":
+		elif token.next.data_type == "OPENP":
 
 			token.selectNext()
 			output = Parser.parseExpression(token)
 
-			if 	token.next.data_type != "CLOSEBR":
+			if 	token.next.data_type != "CLOSEP":
 
 				raise ValueError("Missing Closing parenthesis.")
 
 			token.selectNext()
 
-		elif token.next.data_type == "CLOSEBR":
+		elif token.next.data_type == "CLOSEP":
 
 			raise ValueError("Missing Opening Paranthesis.")
+
+
+		elif token.next.data_type == "IDENT":
+
+			output = Identifier(token.next.value)
+			token.selectNext()
 
 
 		return output
@@ -313,14 +507,17 @@ class Parser():
 
 	@staticmethod
 	def run(code):
-		token = Tokenizer(PrePro.filter(code))
+
+		string = PrePro.filter(code).replace("\n","")
+		token = Tokenizer(string)
 		token.selectNext()
 
-		result = Parser.parseExpression(token)
+		result = Parser.parseBlock(token)
 
 		if result != None and token.next.data_type == "EOF":
 			
-			print(result.Evaluate())
+			for i in result:
+				i.Evaluate()
 
 		else:
 
