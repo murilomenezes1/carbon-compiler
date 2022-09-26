@@ -330,7 +330,7 @@ class Parser():
 
 		if token.next.data_type == "OPENBR":
 
-			# token.selectNext()
+			token.selectNext()
 
 			while token.next.data_type != "CLOSEBR":
 
@@ -343,8 +343,6 @@ class Parser():
 	def parseStatement(token):
 
 		output = NoOp(None)
-
-		token.selectNext()
 
 		if token.next.data_type == "IDENT":
 
