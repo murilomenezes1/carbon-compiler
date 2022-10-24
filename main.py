@@ -125,6 +125,16 @@ class Printer(Node):
 		print(self.children[0].Evaluate())
 
 
+class Block(Node):
+
+	def Evaluate(self):
+
+		for child in self.children:
+
+			child.Evaluate()
+
+
+
 class Assignment(Node):
 
 	def Evaluate(self):
@@ -146,7 +156,7 @@ class If(Node):
 		# print('second:',second_child)
 
 		if first_child.Evaluate():
-			second_child[0].Evaluate()
+			second_child.Evaluate()
 
 		elif len(self.children) > 2:
 			self.children[2].Evaluate()
@@ -160,7 +170,7 @@ class While(Node):
 		second_child = self.children[1]
 
 		while first_child.Evaluate():
-			second_child[0].Evaluate()
+			second_child.Evaluate()
 
 
 
@@ -215,6 +225,10 @@ class Tokenizer():
 					while self.position < len(self.source) and (self.source[self.position].isalpha() or self.source[self.position].isdigit() or self.source[self.position] == "_"):
 
 						text += self.source[self.position]
+						if text == 'else':
+							self.next = Token(text.upper(),text)
+							self.position +=1
+							return self.next
 						self.position += 1
 
 					if text in words:
@@ -457,12 +471,14 @@ class Parser():
 	@staticmethod
 	def parseBlock(token):
 
-		nodes = []
+
 		# token.selectNext()
 
 		if token.next.data_type == "OPENBR":
 
 			token.selectNext()
+
+			nodes = Block("",[])
 
 			while token.next.data_type != "CLOSEBR":
 
@@ -471,7 +487,7 @@ class Parser():
 
 				else:
 
-					nodes.append(Parser.parseStatement(token))
+					nodes.children.append(Parser.parseStatement(token))
 
 
 		token.selectNext()
@@ -685,7 +701,7 @@ class Parser():
 		elif token.next.data_type == "OPENP":
 
 			token.selectNext()
-			output = Parser.parseExpression(token)
+			output = Parser.parseRelEx(token)
 
 			if 	token.next.data_type != "CLOSEP":
 
@@ -718,6 +734,12 @@ class Parser():
 			else:
 
 				raise ValueError("Missing Opening Parenthesis.")
+
+
+		elif token.next.data_type == "NOT":
+
+			token.selectNext()
+			output = UnOp("!",[Parser.parseFactor(token)])
 
 
 		return output
@@ -763,8 +785,8 @@ class Parser():
 
 		if result != None and token.next.data_type == "EOF":
 			
-			for i in result:
-				i.Evaluate()
+			
+			result.Evaluate()
 
 		else:
 

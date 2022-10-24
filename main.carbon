@@ -1,6 +1,14 @@
 
-{Print(1+1);
-Print(1-1);
-Print(1*1);
-Print(1/1);
-Print(---1);}
+
+{
+    a = 0;
+    b = 1;
+    while ((a < 99999) && (b  ==1)){
+        a = a +1;
+        Print(a);
+        if (a == 5){
+            b = 0;
+        }
+    }
+    Print(a);
+}
