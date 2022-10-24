@@ -466,7 +466,13 @@ class Parser():
 
 			while token.next.data_type != "CLOSEBR":
 
-				nodes.append(Parser.parseStatement(token))
+				if token.next.value == "EOF":
+					raise ValueError("Missing }.")
+
+				else:
+
+					nodes.append(Parser.parseStatement(token))
+
 
 		token.selectNext()
 		return nodes
@@ -506,6 +512,7 @@ class Parser():
 			if token.next.data_type == "OPENP":
 
 				token.selectNext()
+
 				exp = Parser.parseExpression(token)
 
 				if token.next.data_type == "CLOSEP":
@@ -602,7 +609,8 @@ class Parser():
 
 		output = Parser.parseFactor(token)
 
-		while token.next.data_type == "MULT" or token.next.data_type == "DIV" and token.next.data_type == "AND":
+
+		while token.next.data_type == "MULT" or token.next.data_type == "DIV" or token.next.data_type == "AND":
 			
 			if token.next.data_type == "MULT":
 
@@ -612,6 +620,7 @@ class Parser():
 				output = BinOp(op, [output, Parser.parseFactor(token)])
 
 			elif token.next.data_type == "DIV":
+
 
 				op = token.next.value
 				token.selectNext()
