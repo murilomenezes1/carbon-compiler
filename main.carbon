@@ -1,8 +1,10 @@
 
 {
-x1 = 3;
-x1 = x1 +1;
-;;;
-Print(x1);
-
+x = Read();
+y = 15;
+z = 1;
+while(z < y){
+   z = z + 1;
+   }
+Print(z);
 }

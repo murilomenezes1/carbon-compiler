@@ -42,6 +42,26 @@ class BinOp(Node):
 
 			return first_child // second_child
 
+		elif self.value == "==":
+
+			return first_child == second_child
+
+		elif self.value == ">":
+
+			return first_child > second_child
+
+		elif self.value == "<":
+
+			return first_child < second_child
+
+		elif self.value == "||":
+
+			return first_child or second_child
+
+		elif self.value == "&&":
+
+			return first_child and second_child
+
 class UnOp(Node):
 
 
@@ -56,6 +76,10 @@ class UnOp(Node):
 		elif self.value == "-":
 
 			return -child
+
+		elif self.value == "!":
+
+			return not(child)
 
 
 class IntVal(Node):
@@ -97,6 +121,7 @@ class Printer(Node):
 
 	def Evaluate(self):
 
+
 		print(self.children[0].Evaluate())
 
 
@@ -105,6 +130,40 @@ class Assignment(Node):
 	def Evaluate(self):
 
 		SymbolTable.setter(self.children[0], self.children[1].Evaluate())
+
+class Reader(Node):
+
+	def Evaluate(self):
+		return int(input())
+
+class If(Node):
+
+	def Evaluate(self):
+
+		first_child = self.children[0]
+		second_child = self.children[1]
+		# print('first: ', first_child)
+		# print('second:',second_child)
+
+		if first_child.Evaluate():
+			second_child[0].Evaluate()
+
+		elif len(self.children) > 2:
+			self.children[2].Evaluate()
+
+
+class While(Node):
+
+	def Evaluate(self):
+		
+		first_child = self.children[0]
+		second_child = self.children[1]
+
+		while first_child.Evaluate():
+			second_child[0].Evaluate()
+
+
+
 
 
 
@@ -126,6 +185,7 @@ class Tokenizer():
 		num = ""
 		text = ""
 		EON = False
+		words = ["Print", "Read","if","else","while"]
 
 		if self.position < len(self.source):
 
@@ -144,7 +204,12 @@ class Tokenizer():
 			and self.source[self.position] != "{"
 			and self.source[self.position] != "}"
 			and self.source[self.position] != ";"
-			and self.source[self.position] != "="):
+			and self.source[self.position] != "="
+			and self.source[self.position] != "!"
+			and self.source[self.position] != "<"
+			and self.source[self.position] != ">"
+			and self.source[self.position] != "|"
+			and self.source[self.position] != "&"):
 
 				if self.source[self.position].isalpha():
 					while self.position < len(self.source) and (self.source[self.position].isalpha() or self.source[self.position].isdigit() or self.source[self.position] == "_"):
@@ -152,9 +217,9 @@ class Tokenizer():
 						text += self.source[self.position]
 						self.position += 1
 
-					if text == "Print":
+					if text in words:
 
-						self.next = Token("PRINT", text)
+						self.next = Token(text.upper(), text)
 
 					else:
 
@@ -169,7 +234,7 @@ class Tokenizer():
 					for i in range(self.position, len(self.source)):
 						if not EON:
 							if i != (len(self.source) - 1):
-								if self.source[i+1] != '+' and self.source[i+1] != '-' and self.source[i+1] != "*" and self.source[i+1] != "/" and self.source[i+1] != "(" and self.source[i+1] != ")" and self.source[i+1] != "{" and self.source[i+1] != "}" and self.source[i+1] != ";" and self.source[i+1] != "=":
+								if self.source[i+1] != '+' and self.source[i+1] != '-' and self.source[i+1] != "*" and self.source[i+1] != "/" and self.source[i+1] != "(" and self.source[i+1] != ")" and self.source[i+1] != "{" and self.source[i+1] != "}" and self.source[i+1] != ";" and self.source[i+1] != "=" and self.source[i+1] != ";" and self.source[i+1] != "<" and self.source[i+1] != ">" and self.source[i+1] != "|" and self.source[i+1] != "!" and self.source[i+1] != "&":
 									if not self.source[i+1].isdigit():
 										EON = True
 
@@ -285,7 +350,11 @@ class Tokenizer():
 				return self.next
 
 			elif self.source[self.position] == "=":
-				self.next = Token("EQUAL", self.source[self.position])
+				if self.source[self.position+1] == "=":
+					self.next = Token("COMPARE", "==")
+					self.position += 1
+				else:
+					self.next = Token("EQUAL", self.source[self.position])
 
 				if self.position + 1 < len(self.source):	
 					while self.source[self.position + 1] == " ":
@@ -305,6 +374,69 @@ class Tokenizer():
 				self.position += 1
 
 				return self.next
+
+			elif self.source[self.position] == "!":
+				self.next = Token("NOT", self.source[self.position])
+
+				if self.position + 1 < len(self.source):	
+					while self.source[self.position + 1] == " ":
+						self.position += 1
+
+				self.position += 1
+
+				return self.next
+
+			elif self.source[self.position] == ">":
+				self.next = Token("GREATER", self.source[self.position])
+
+				if self.position + 1 < len(self.source):	
+					while self.source[self.position + 1] == " ":
+						self.position += 1
+
+				self.position += 1
+
+				return self.next
+
+			elif self.source[self.position] == "<":
+				self.next = Token("LESS", self.source[self.position])
+
+				if self.position + 1 < len(self.source):	
+					while self.source[self.position + 1] == " ":
+						self.position += 1
+
+				self.position += 1
+
+				return self.next
+
+			elif self.source[self.position] == "|":
+				if self.source[self.position+1] == "|":
+
+					self.next = Token("OR", "||")
+
+					if self.position + 1 < len(self.source):	
+						while self.source[self.position + 1] == " ":
+							self.position += 1
+
+					self.position += 2
+
+					return self.next
+
+			elif self.source[self.position] == "&":
+				if self.source[self.position+1] == "&":
+
+					self.next = Token("AND", "&&")
+
+					if self.position + 1 < len(self.source):	
+						while self.source[self.position + 1] == " ":
+							self.position += 1
+
+					self.position += 2
+
+					return self.next			
+
+
+
+
 
 			if num != "" and EON == True:
 
@@ -404,9 +536,62 @@ class Parser():
 			token.selectNext()
 			return output
 
+		elif token.next.data_type == "IF":
+			token.selectNext()
+			if token.next.data_type == "OPENP":
+				token.selectNext()
+				par1 = Parser.parseRelEx(token)
+
+				if token.next.data_type == "CLOSEP":
+					token.selectNext()
+					par2 = Parser.parseStatement(token)
+
+					if token.next.data_type == "ELSE":
+
+						token.selectNext()
+						par3 = Parser.parseStatement(token)
+
+
+						output = If("",[par1,par2,par3])
+
+					else:
+						# print('par1: ',par1)
+						# print('par2: ',par2)
+						output = If("",[par1,par2])
+
+					return output
+
+				else:
+					raise ValueError("Missing Closing Parenthesis.")
+
+			else:
+				raise ValueError("Missing Opening Parenthesis.")
+
+
+		elif token.next.data_type == "WHILE":
+			token.selectNext()
+			if token.next.data_type == "OPENP":
+				token.selectNext()
+				par1 = Parser.parseRelEx(token)
+
+				if token.next.data_type == "CLOSEP":
+
+					token.selectNext()
+					par2 = Parser.parseStatement(token)
+					output = While("", [par1,par2])
+					return output
+
+				else:
+
+					raise ValueError("Missing Closing Parenthesis.")
+
+			else:
+
+				raise ValueError("Missing Opening Parenthesis.")
+
 		else:
 
-			raise ValueError("Invalid Expression.")
+			return Parser.parseBlock(token)
 
 
 
@@ -417,7 +602,7 @@ class Parser():
 
 		output = Parser.parseFactor(token)
 
-		while token.next.data_type == "MULT" or token.next.data_type == "DIV":
+		while token.next.data_type == "MULT" or token.next.data_type == "DIV" and token.next.data_type == "AND":
 			
 			if token.next.data_type == "MULT":
 
@@ -432,6 +617,12 @@ class Parser():
 				token.selectNext()
 				output = BinOp(op, [output, Parser.parseFactor(token)])
 
+			elif token.next.data_type == "AND":
+
+				op = token.next.value
+				token.selectNext()
+				output = BinOp(op, [output, Parser.parseFactor(token)])
+
 		return output
 
 
@@ -440,7 +631,7 @@ class Parser():
 
 		output = Parser.parseTerm(token)
 
-		while token.next.data_type == "PLUS" or token.next.data_type == "MINUS":
+		while token.next.data_type == "PLUS" or token.next.data_type == "MINUS" or token.next.data_type == "OR":
 
 			if token.next.data_type == "PLUS":
 
@@ -455,6 +646,11 @@ class Parser():
 				token.selectNext()
 				output = BinOp(op, [output, Parser.parseTerm(token)])
 
+			if token.next.data_type == "OR":
+
+				op = token.next.value
+				token.selectNext()
+				output = BinOp(op,[output, Parser.parseTerm(token)])
 
 		return output
 
@@ -499,6 +695,50 @@ class Parser():
 			token.selectNext()
 
 
+		elif token.next.data_type == "READ":
+
+			token.selectNext()
+			if token.next.data_type == "OPENP":
+				token.selectNext()
+				if token.next.data_type == "CLOSEP":
+					token.selectNext()
+					output = Reader("")
+				else:
+					raise ValueError("Missing Clsoing Parenthesis.")
+
+			else:
+
+				raise ValueError("Missing Opening Parenthesis.")
+
+
+		return output
+
+
+	@staticmethod
+	def parseRelEx(token):
+
+		output = Parser.parseExpression(token)
+		# print("output: ", output)
+
+		while token.next.data_type == "GREATER" or token.next.data_type == "LESS" or token.next.data_type == "COMPARE":
+
+			if token.next.data_type == "GREATER":
+				op = token.next.value
+				token.selectNext()
+				output = BinOp(op,[output, Parser.parseExpression(token)])
+
+			if token.next.data_type == "LESS":
+				op = token.next.value
+				token.selectNext()
+				output = BinOp(op,[output, Parser.parseExpression(token)])
+
+			if token.next.data_type == "COMPARE":
+				op = token.next.value
+				# print("op:",op)
+				token.selectNext()
+				# print(token.next.value)
+				output = BinOp(op,[output, Parser.parseExpression(token)])
+		
 		return output
 
 
