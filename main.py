@@ -273,12 +273,12 @@ class Tokenizer():
 		EON = False
 		words = ["Print", "Read","if","else","while","var","String","i32"]
 
+		
+		while self.position < len(self.source) and self.source[self.position] == " ":
+
+			self.position += 1
+
 		if self.position < len(self.source):
-
-
-			while self.source[self.position] == " ":
-
-				self.position += 1
 
 			if (self.source[self.position] != '+' 
 			and self.source[self.position] != '-' 
@@ -440,9 +440,9 @@ class Tokenizer():
 			elif self.source[self.position] == "}":
 				self.next = Token("CLOSEBR", self.source[self.position])
 
-				if self.position + 1 < len(self.source):	
-					while self.source[self.position + 1] == " ":
-						self.position += 1
+				# if self.position + 1 < len(self.source):	
+				# 	while self.source[self.position + 1] == " ":
+				# 		self.position += 1
 
 				self.position += 1
 
@@ -645,7 +645,7 @@ class Parser():
 
 				if token.next.data_type == "SEMI_C":
 
-					# token.selectNext()
+					token.selectNext()
 					return output
 
 				else:
@@ -704,6 +704,7 @@ class Parser():
 					token.selectNext()
 					par2 = Parser.parseStatement(token)
 
+
 					if token.next.data_type == "ELSE":
 
 						token.selectNext()
@@ -713,8 +714,6 @@ class Parser():
 						output = If("",[par1,par2,par3])
 
 					else:
-						# print('par1: ',par1)
-						# print('par2: ',par2)
 						output = If("",[par1,par2])
 
 					return output
