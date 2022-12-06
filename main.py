@@ -45,15 +45,15 @@ class BinOp(Node):
 
 			elif self.value == "==":
 
-				return (first_child[0] == second_child[0], "i32")
+				return (int(first_child[0] == second_child[0]), "i32")
 
 			elif self.value == ">":
 
-				return (first_child[0] > second_child[0], "i32")
+				return (int(first_child[0] > second_child[0]), "i32")
 
 			elif self.value == "<":
 
-				return (first_child[0] < second_child[0], "i32")
+				return (int(first_child[0] < second_child[0]), "i32")
 
 			elif self.value == "||":
 
