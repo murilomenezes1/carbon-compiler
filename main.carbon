@@ -1,14 +1,9 @@
-
-
 {
-    a = 0;
-    b = 1;
-    while ((a < 99999) && (b  ==1)){
-        a = a +1;
-        Print(a);
-        if (a == 5){
-            b = 0;
-        }
-    }
-    Print(a);
+var x, y: i32;
+var z: String;
+z = "x = ";
+x = 1;
+y = x || (1==1);
+Print(x + y);
+Print(z . x);
 }

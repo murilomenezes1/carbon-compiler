@@ -25,42 +25,77 @@ class BinOp(Node):
 		first_child = self.children[0].Evaluate()
 		second_child = self.children[1].Evaluate()
 
+		if first_child[1] == "i32" and second_child[1] == "i32":
 
-		if self.value == "+":
+			if self.value == "+":
 
-			return first_child + second_child
+				return (first_child[0] + second_child[0], "i32")
 
-		elif self.value == "-":
+			elif self.value == "-":
 
-			return first_child - second_child
+				return (first_child[0] - second_child[0], "i32")
 
-		elif self.value == "*":
+			elif self.value == "*":
 
-			return first_child * second_child
+				return (first_child[0] * second_child[0], "i32")
 
-		elif self.value == "/":
+			elif self.value == "/":
 
-			return first_child // second_child
+				return (first_child[0] // second_child[0], "i32")
 
-		elif self.value == "==":
+			elif self.value == "==":
 
-			return first_child == second_child
+				return (first_child[0] == second_child[0], "i32")
 
-		elif self.value == ">":
+			elif self.value == ">":
 
-			return first_child > second_child
+				return (first_child[0] > second_child[0], "i32")
 
-		elif self.value == "<":
+			elif self.value == "<":
 
-			return first_child < second_child
+				return (first_child[0] < second_child[0], "i32")
 
-		elif self.value == "||":
+			elif self.value == "||":
 
-			return first_child or second_child
+				return (first_child[0] or second_child[0], "i32")
 
-		elif self.value == "&&":
+			elif self.value == "&&":
 
-			return first_child and second_child
+				return (first_child[0] and second_child[0], "i32")
+
+			elif self.value == ".":
+
+				return (str(str(first_child[0]) + str(second_child[0])),"String")
+
+		if first_child[1] == "String" and second_child[1] == "String":
+
+			if self.value == ".":
+
+				return (str(str(first_child[0]) + str(second_child[0])),"String")
+
+			if self.value == "==":
+
+				return (str(first_child[0]) == str(second_child[0]), "i32")
+
+			if self.value == "<":
+
+				return (str(first_child[0]) < str(second_child[0]),"i32")
+
+			if self.value == ">":
+
+				return (str(first_child[0]) < str(second_child[0]),"i32")
+
+		if first_child[1] == "String" or second_child[1] == "String":
+
+			if self.value == ".":
+
+				return (str(str(first_child[0]) + str(second_child[0])),"String")
+
+			if self.value == "==":
+
+				return (int(first_child[0] == second_child[0]), "i32")
+
+
 
 class UnOp(Node):
 
@@ -69,24 +104,47 @@ class UnOp(Node):
 
 		child = self.children[0].Evaluate()
 
-		if self.value == "+":
 
-			return child
+		if child[1] == "i32":
 
-		elif self.value == "-":
+			if self.value == "+":
 
-			return -child
+				return (child[0],"i32")
 
-		elif self.value == "!":
+			elif self.value == "-":
 
-			return not(child)
+				return (-child[0], "i32")
+
+			elif self.value == "!":
+
+				return (not(child[0]), "i32")
+
+		else:
+
+			raise ValueError("Invalid Data Type (UnOp).")
 
 
 class IntVal(Node):
 
 	def Evaluate(self):
 
-		return int(self.value)
+		return (int(self.value),"i32")
+
+class StrVal(Node):
+
+	def Evaluate(self):
+
+		return (str(self.value),"String")
+
+class VarDec(Node):
+
+	def Evaluate(self):
+
+		var = self.value
+		for i in self.children:
+			SymbolTable.creator(i.value,var)
+
+
 
 
 class NoOp(Node):
@@ -99,6 +157,15 @@ symbol_table = {}
 class SymbolTable():
 
 	@staticmethod
+	def creator(var,type):
+
+		if var in symbol_table:
+			raise ValueError("Invalid ST.")
+		else:
+
+			symbol_table[var] = (None,type)
+
+	@staticmethod
 	def getter(k):
 
 		return symbol_table[k]
@@ -106,7 +173,16 @@ class SymbolTable():
 	@staticmethod
 	def setter(k,v):
 
-		symbol_table[k] = v
+		if k in symbol_table:
+			if v[1] == symbol_table[k][1]:
+				symbol_table[k] = v
+			else:
+
+				raise ValueError("Invalid Data Type in ST.")
+
+		else:
+
+			 raise ValueError("Var not in ST.")
 
 
 
@@ -114,7 +190,9 @@ class Identifier(Node):
 
 	def Evaluate(self):
 
-		return SymbolTable.getter(self.value)
+		st = SymbolTable.getter(self.value)
+
+		return (st[0],st[1])
 
 
 class Printer(Node):
@@ -122,7 +200,7 @@ class Printer(Node):
 	def Evaluate(self):
 
 
-		print(self.children[0].Evaluate())
+		print(self.children[0].Evaluate()[0])
 
 
 class Block(Node):
@@ -144,7 +222,7 @@ class Assignment(Node):
 class Reader(Node):
 
 	def Evaluate(self):
-		return int(input())
+		return (int(input()),"i32")
 
 class If(Node):
 
@@ -152,8 +230,6 @@ class If(Node):
 
 		first_child = self.children[0]
 		second_child = self.children[1]
-		# print('first: ', first_child)
-		# print('second:',second_child)
 
 		if first_child.Evaluate():
 			second_child.Evaluate()
@@ -169,7 +245,7 @@ class While(Node):
 		first_child = self.children[0]
 		second_child = self.children[1]
 
-		while first_child.Evaluate():
+		while (first_child.Evaluate()[0]):
 			second_child.Evaluate()
 
 
@@ -195,7 +271,7 @@ class Tokenizer():
 		num = ""
 		text = ""
 		EON = False
-		words = ["Print", "Read","if","else","while"]
+		words = ["Print", "Read","if","else","while","var","String","i32"]
 
 		if self.position < len(self.source):
 
@@ -219,27 +295,36 @@ class Tokenizer():
 			and self.source[self.position] != "<"
 			and self.source[self.position] != ">"
 			and self.source[self.position] != "|"
-			and self.source[self.position] != "&"):
+			and self.source[self.position] != "&"
+			and self.source[self.position] != ":"
+			and self.source[self.position] != "."
+			and self.source[self.position] != ","
+			and self.source[self.position] != "\""):
 
 				if self.source[self.position].isalpha():
 					while self.position < len(self.source) and (self.source[self.position].isalpha() or self.source[self.position].isdigit() or self.source[self.position] == "_"):
 
 						text += self.source[self.position]
-						if text == 'else':
-							self.next = Token(text.upper(),text)
-							self.position +=1
-							return self.next
 						self.position += 1
-
 					if text in words:
+						if text == "String":
+							self.next = Token("TYPE", "String")
+							# self.position += 1
+							return self.next
 
-						self.next = Token(text.upper(), text)
+						elif text == "i32":
+							self.next = Token("TYPE", "i32")
+							# self.position += 1
+							return self.next
+						else:
+							self.next = Token(text.upper(),text)
+							# self.position +=1
+							return self.next
 
 					else:
-
 						self.next = Token("IDENT", text)
-
-					return self.next
+						# self.position += 1
+						return self.next
 
 				if self.source[self.position].isdigit():
 					num += self.source[self.position]
@@ -248,7 +333,7 @@ class Tokenizer():
 					for i in range(self.position, len(self.source)):
 						if not EON:
 							if i != (len(self.source) - 1):
-								if self.source[i+1] != '+' and self.source[i+1] != '-' and self.source[i+1] != "*" and self.source[i+1] != "/" and self.source[i+1] != "(" and self.source[i+1] != ")" and self.source[i+1] != "{" and self.source[i+1] != "}" and self.source[i+1] != ";" and self.source[i+1] != "=" and self.source[i+1] != ";" and self.source[i+1] != "<" and self.source[i+1] != ">" and self.source[i+1] != "|" and self.source[i+1] != "!" and self.source[i+1] != "&":
+								if self.source[i+1] != '+' and self.source[i+1] != '-' and self.source[i+1] != "*" and self.source[i+1] != "/" and self.source[i+1] != "(" and self.source[i+1] != ")" and self.source[i+1] != "{" and self.source[i+1] != "}" and self.source[i+1] != ";" and self.source[i+1] != "=" and self.source[i+1] != ";" and self.source[i+1] != "<" and self.source[i+1] != ">" and self.source[i+1] != "|" and self.source[i+1] != "!" and self.source[i+1] != "&" and self.source[i+1] != ":" and self.source[i+1] != "." and self.source[i+1] != "\"":
 									if not self.source[i+1].isdigit():
 										EON = True
 
@@ -446,7 +531,56 @@ class Tokenizer():
 
 					self.position += 2
 
-					return self.next			
+					return self.next	
+
+			elif self.source[self.position] == ":":
+				self.next = Token("COLON", self.source[self.position])
+
+				if self.position + 1 < len(self.source):	
+					while self.source[self.position + 1] == " ":
+						self.position += 1
+
+				self.position += 1
+
+				return self.next
+
+			elif self.source[self.position] == ".":
+				self.next = Token("DOT", self.source[self.position])
+
+				if self.position + 1 < len(self.source):	
+					while self.source[self.position + 1] == " ":
+						self.position += 1
+
+				self.position += 1
+
+				return self.next
+
+			elif self.source[self.position] == ",":
+				self.next = Token("COMMA", self.source[self.position])
+
+				if self.position + 1 < len(self.source):
+					while self.source[self.position + 1] == " ":
+						self.position += 1
+
+				self.position += 1
+
+				return self.next
+
+
+			if self.source[self.position] == "\"":
+
+				string = ""
+				self.position += 1
+
+				while self.source[self.position] != "\"":
+					string += self.source[self.position]
+
+					self.position += 1
+
+				self.position += 1
+				self.next = Token("STRING", string)
+
+				return self.next	
 
 
 
@@ -461,9 +595,9 @@ class Tokenizer():
 				return self.next
 
 		
-
-		self.next = Token("EOF", "EOF")
-		return self.next
+		else:
+			self.next = Token("EOF", "EOF")
+			return self.next
 
 class Parser():
 
@@ -507,7 +641,7 @@ class Parser():
 
 				token.selectNext()
 
-				output = Assignment("=",[output,Parser.parseExpression(token)])
+				output = Assignment("=",[output,Parser.parseRelEx(token)])
 
 				if token.next.data_type == "SEMI_C":
 
@@ -529,7 +663,8 @@ class Parser():
 
 				token.selectNext()
 
-				exp = Parser.parseExpression(token)
+				exp = Parser.parseRelEx(token)
+
 
 				if token.next.data_type == "CLOSEP":
 
@@ -612,6 +747,52 @@ class Parser():
 
 				raise ValueError("Missing Opening Parenthesis.")
 
+		elif token.next.data_type == "VAR":
+			token.selectNext()
+
+			if token.next.data_type == "IDENT":
+
+				var = [Identifier(token.next.value)]
+				token.selectNext()
+
+				while token.next.data_type == "COMMA":
+					token.selectNext()
+					if token.next.data_type == "IDENT":
+						var.append(Identifier(token.next.value))
+
+
+					else:
+
+						raise ValueError("Invalid token [,].")
+
+					token.selectNext()
+				if token.next.data_type == "COLON":
+
+					token.selectNext()
+
+				else:
+
+					raise ValueError("Missing ':'")
+
+				if token.next.data_type == "TYPE":
+					var_type = token.next.value
+
+				token.selectNext()
+
+
+
+				if token.next.data_type == "SEMI_C":
+					token.selectNext()
+					return VarDec(var_type,var)
+
+				else:
+
+					raise ValueError("Missing semi-colon")
+
+			else:
+
+				raise ValueError("Invalid var name.")
+
 		else:
 
 			return Parser.parseBlock(token)
@@ -686,6 +867,14 @@ class Parser():
 			
 			output = IntVal(token.next.value, [token.next.value])
 			token.selectNext()
+
+
+		elif token.next.data_type == "STRING":
+
+			value = token.next.value
+			output = StrVal(value)
+			token.selectNext()
+
 			
 
 		elif token.next.data_type == "PLUS":
@@ -751,7 +940,7 @@ class Parser():
 		output = Parser.parseExpression(token)
 		# print("output: ", output)
 
-		while token.next.data_type == "GREATER" or token.next.data_type == "LESS" or token.next.data_type == "COMPARE":
+		while token.next.data_type == "GREATER" or token.next.data_type == "LESS" or token.next.data_type == "COMPARE" or token.next.data_type == "DOT":
 
 			if token.next.data_type == "GREATER":
 				op = token.next.value
@@ -768,6 +957,12 @@ class Parser():
 				# print("op:",op)
 				token.selectNext()
 				# print(token.next.value)
+				output = BinOp(op,[output, Parser.parseExpression(token)])
+
+			if token.next.data_type == "DOT":
+
+				op = token.next.value
+				token.selectNext()
 				output = BinOp(op,[output, Parser.parseExpression(token)])
 		
 		return output
@@ -802,7 +997,7 @@ class PrePro():
 	def filter(code):
 		f = re.sub(re.compile("//.*?\n"),"",code)
 
-		f = re.sub("\s+","",f)
+		f = re.sub("\s+"," ",f)
 		return f.replace("\n","")
 
 		
