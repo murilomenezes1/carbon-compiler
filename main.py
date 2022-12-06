@@ -79,11 +79,11 @@ class BinOp(Node):
 
 			if self.value == "<":
 
-				return (int(first_child[0]) < str(second_child[0]),"i32")
+				return (int(str(first_child[0]) < str(second_child[0])),"i32")
 
 			if self.value == ">":
 
-				return (int(first_child[0]) > str(second_child[0]),"i32")
+				return (int(str(first_child[0]) > str(second_child[0])),"i32")
 
 		if first_child[1] == "String" or second_child[1] == "String":
 
