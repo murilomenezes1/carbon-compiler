@@ -296,14 +296,14 @@ class If(Node):
 
 		if len(self.children) > 2:
 			assembler.addOutput("JE ELSE_{}".format(self.id))
-			second_child.Evaluate()
+			self.children[1].Evaluate()
 			assembler.addOutput("JMP EXIT_{}".format(self.id))
 			assembler.addOutput("ELSE_{}:".format(self.id))
-			third_child.Evaluate()
+			self.children[2].Evaluate()
 			assembler.addOutput("EXIT_{}".format(self.id))
 		else:
 			assembler.addOutput("JE EXIT_{}".format(self.id))
-			second_child.Evaluate()
+			self.children[1].Evaluate()
 			assembler.addOutput("JMP EXIT_{}".format(self.id))
 			assembler.addOutput("EXIT_{}".format(self.id))
 
