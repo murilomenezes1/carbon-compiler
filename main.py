@@ -290,8 +290,8 @@ class If(Node):
 		self.id = Node.newId()
 		assembler.addOutput("if_{}:".format(self.id))
 		first_child = self.children[0]
-		second_child = self.children[1]
-		third_child = self.children[2]
+		# second_child = self.children[1]
+		# third_child = self.children[2]
 		assembler.addOutput("CMP EBX, False")
 
 		if len(self.children) > 2:
