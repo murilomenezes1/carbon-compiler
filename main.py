@@ -300,12 +300,12 @@ class If(Node):
 			assembler.addOutput("JMP EXIT_{}".format(self.id))
 			assembler.addOutput("ELSE_{}:".format(self.id))
 			self.children[2].Evaluate()
-			assembler.addOutput("EXIT_{}".format(self.id))
+			assembler.addOutput("EXIT_{}:".format(self.id))
 		else:
 			assembler.addOutput("JE EXIT_{}".format(self.id))
 			self.children[1].Evaluate()
 			assembler.addOutput("JMP EXIT_{}".format(self.id))
-			assembler.addOutput("EXIT_{}".format(self.id))
+			assembler.addOutput("EXIT_{}:".format(self.id))
 
 
 
@@ -317,13 +317,13 @@ class While(Node):
 		second_child = self.children[1]
 		
 		self.id  = Node.newId()
-		assembler.addOutput("LOOP_{}".format(self.id))
+		assembler.addOutput("LOOP_{}:".format(self.id))
 		first_child.Evaluate()[0]
 		assembler.addOutput("CMP EBX, False")
 		assembler.addOutput("JE EXIT_{}".format(self.id))
 		second_child.Evaluate()
 		assembler.addOutput("JMP LOOP_{}".format(self.id))
-		assembler.addOutput("EXIT_{}".format(self.id))
+		assembler.addOutput("EXIT_{}:".format(self.id))
 
 class assembler:
 	string_w = ""
