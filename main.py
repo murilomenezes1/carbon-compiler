@@ -6,6 +6,8 @@ import re
 
 class Node():
 
+	i = 0
+
 	def __init__(self,variant,nodes = []):
 
 		self.value = variant
@@ -15,6 +17,12 @@ class Node():
 
 		pass
 
+	def newId():
+
+		Node.i += 1
+
+		return Node.i
+
 
 
 
@@ -22,45 +30,67 @@ class BinOp(Node):
 
 	def Evaluate(self):
 
+		self.id = Node.newId()
 		first_child = self.children[0].Evaluate()
+		assembler.addOutput("PUSH EBX")
 		second_child = self.children[1].Evaluate()
+		assembler.addOutput("POP EAX")
 
 		if first_child[1] == "i32" and second_child[1] == "i32":
 
 			if self.value == "+":
 
+				assembler.addOutput("ADD EAX, EBX")
+				assembler.addOutput("MOV EBX, EAX")
+
 				return (first_child[0] + second_child[0], "i32")
 
 			elif self.value == "-":
+
+				assembler.addOutput("SUB EAX, EBX")
+				assembler.addOutput("MOV EBX, EAX")
 
 				return (first_child[0] - second_child[0], "i32")
 
 			elif self.value == "*":
 
+
+				assembler.addOutput("IMUL EBX")
+				assembler.addOutput("MOV EBX, EAX")
 				return (first_child[0] * second_child[0], "i32")
 
 			elif self.value == "/":
 
+				assembler.addOutput("IDIV EBX")
+				assembler.addOutput("MOV EBX, EAX")
 				return (first_child[0] // second_child[0], "i32")
 
 			elif self.value == "==":
 
+				assembler.addOutput("CMP EAX, EBX")
+				assembler.addOutput("CALL binop_je")
 				return (int(first_child[0] == second_child[0]), "i32")
 
 			elif self.value == ">":
 
+				assembler.addOutput("CMP EAX, EBX")
+				assembler.addOutput("CALL binop_jg")
 				return (int(first_child[0] > second_child[0]), "i32")
 
 			elif self.value == "<":
 
+				assembler.addOutput("CMP EAX, EBX")
+				assembler.addOutput("CALL binop_jl")
 				return (int(first_child[0] < second_child[0]), "i32")
 
 			elif self.value == "||":
 
+				assembler.addOutput("OR EBX, EAX")
 				return (first_child[0] or second_child[0], "i32")
 
 			elif self.value == "&&":
 
+				assembler.addOutput("AND EBX, EAX")
 				return (first_child[0] and second_child[0], "i32")
 
 			elif self.value == ".":
@@ -75,14 +105,20 @@ class BinOp(Node):
 
 			if self.value == "==":
 
+				assembler.addOutput("CMP EAX, EBX")
+				assembler.addOutput("CALL binop_je")
 				return (int(str(first_child[0]) == str(second_child[0])), "i32")
 
 			if self.value == "<":
 
+				assembler.addOutput("CMP EAX, EBX")
+				assembler.addOutput("CALL binop_jl")
 				return (int(str(first_child[0]) < str(second_child[0])),"i32")
 
 			if self.value == ">":
 
+				assembler.addOutput("CMP EAX, EBX")
+				assembler.addOutput("CALL binop_jg")
 				return (int(str(first_child[0]) > str(second_child[0])),"i32")
 
 		if first_child[1] == "String" or second_child[1] == "String":
@@ -93,6 +129,8 @@ class BinOp(Node):
 
 			if self.value == "==":
 
+				assembler.addOutput("CMP EAX, EBX")
+				assembler.addOutput("CALL binop_je")
 				return (int(first_child[0] == second_child[0]), "i32")
 
 
@@ -109,14 +147,20 @@ class UnOp(Node):
 
 			if self.value == "+":
 
+				assembler.addOutput("ADD EBX, 0")
 				return (child[0],"i32")
 
 			elif self.value == "-":
 
+				assembler.addOutput("MOV EAX, {}".format(child[0]))
+				assembler.addOutput("MOV EBX, -1")
+				assembler.addOutput("IMUL EBX")
+				assembler.addOutput("MOV EBX, EAX")
 				return (-child[0], "i32")
 
 			elif self.value == "!":
 
+				assembler.addOutput("NEG EBX")
 				return (not(child[0]), "i32")
 
 		else:
@@ -128,6 +172,7 @@ class IntVal(Node):
 
 	def Evaluate(self):
 
+		assembler.addOutput("MOV EBX, " + str(self.value))
 		return (int(self.value),"i32")
 
 class StrVal(Node):
@@ -143,6 +188,7 @@ class VarDec(Node):
 		var = self.value
 		for i in self.children:
 			SymbolTable.creator(i.value,var)
+			assembler.addOutput("PUSH DWORD 0")
 
 
 
@@ -156,14 +202,17 @@ class NoOp(Node):
 symbol_table = {}
 class SymbolTable():
 
+	stat = 0 
+
 	@staticmethod
 	def creator(var,type):
 
+		SymbolTable.stat += 4
 		if var in symbol_table:
 			raise ValueError("Invalid ST.")
 		else:
 
-			symbol_table[var] = (None,type)
+			symbol_table[var] = [None,type, SymbolTable.stat]
 
 	@staticmethod
 	def getter(k):
@@ -175,7 +224,7 @@ class SymbolTable():
 
 		if k in symbol_table:
 			if v[1] == symbol_table[k][1]:
-				symbol_table[k] = v
+				symbol_table[k][0] = v[0]
 			else:
 
 				raise ValueError("Invalid Data Type in ST.")
@@ -192,6 +241,8 @@ class Identifier(Node):
 
 		st = SymbolTable.getter(self.value)
 
+		assembler.addOutput("MOV EBX, [EBP-{}]".format(st[2]))
+
 		return (st[0],st[1])
 
 
@@ -201,6 +252,9 @@ class Printer(Node):
 
 
 		print(self.children[0].Evaluate()[0])
+		assembler.addOutput("PUSH  EBX")
+		assembler.addOutput("CALL print")
+		assembler.addOutput("POP EBX")
 
 
 class Block(Node):
@@ -218,8 +272,13 @@ class Assignment(Node):
 	def Evaluate(self):
 
 		SymbolTable.setter(self.children[0], self.children[1].Evaluate())
+		var = SymbolTable.getter(self.children[0])[2]
+		assembler.addOutput("MOV [EBP-{}], EBX".format(var))
 
 class Reader(Node):
+
+	def __init__(self,value,children=[]):
+		super().__init__(value, children)
 
 	def Evaluate(self):
 		return (int(input()),"i32")
@@ -228,25 +287,163 @@ class If(Node):
 
 	def Evaluate(self):
 
+		self.id = Node.newId()
+		assembler.addOutput("if_{}:".format(self.id))
 		first_child = self.children[0]
 		second_child = self.children[1]
+		third_child = self.children[2]
+		assembler.addOutput("CMP EBX, False")
 
-		if first_child.Evaluate():
+		if len(self.children) > 2:
+			assembler.addOutput("JE ELSE_{}".format(self.id))
 			second_child.Evaluate()
+			assembler.addOutput("JMP EXIT_{}".format(self.id))
+			assembler.addOutput("ELSE_{}:".format(self.id))
+			third_child.Evaluate()
+			assembler.addOutput("EXIT_{}".format(self.id))
+		else:
+			assembler.addOutput("JE EXIT_{}".format(self.id))
+			second_child.Evaluate()
+			assembler.addOutput("JMP EXIT_{}".format(self.id))
+			assembler.addOutput("EXIT_{}".format(self.id))
 
-		elif len(self.children) > 2:
-			self.children[2].Evaluate()
 
 
 class While(Node):
 
 	def Evaluate(self):
-		
+
 		first_child = self.children[0]
 		second_child = self.children[1]
+		
+		self.id  = Node.newId()
+		assembler.addOutput("LOOP_{}".format(self.id))
+		first_child.Evaluate()[0]
+		assembler.addOutput("CMP EBX, False")
+		assembler.addOutput("JE EXIT_{}".format(self.id))
+		second_child.Evaluate()
+		assembler.addOutput("JMP LOOP_{}".format(self.id))
+		assembler.addOutput("EXIT_{}".format(self.id))
 
-		while (first_child.Evaluate()[0]):
-			second_child.Evaluate()
+class assembler:
+	string_w = ""
+	prog = ""
+
+	for i in sys.argv[1]:
+
+		if i != ".":
+			prog += i
+		else:
+			break
+
+	@staticmethod
+	def addOutput(content):
+		assembler.string_w += content + "\n"
+
+	@staticmethod
+	def create():
+		start = """; constantes
+SYS_EXIT equ 1
+SYS_READ equ 3
+SYS_WRITE equ 4
+STDIN equ 0
+STDOUT equ 1
+True equ 1
+False equ 0
+
+segment . data
+
+segment . bss ; variaveis
+res RESB 1
+
+
+section . text
+global _start
+
+print : ; subrotina print
+
+PUSH EBP ; guarda o base pointer
+MOV EBP, ESP ; estabelece um novo base pointer
+
+MOV EAX, [EBP+8] ; 1 argumento antes do RET e EBP
+XOR ESI , ESI
+
+print_dec : ; empilha todos os digitos
+MOV EDX, 0
+MOV EBX, 0x000A
+DIV EBX
+ADD EDX, '0'
+PUSH EDX
+INC ESI ; contador de digitos
+CMP EAX, 0
+JZ print_next ; quando acabar pula
+JMP print_dec
+
+print_next :
+CMP ESI , 0
+JZ print_exit ; quando acabar de imprimir
+DEC ESI
+
+MOV EAX, SYS_WRITE
+MOV EBX, STDOUT
+
+POP ECX
+MOV [res] , ECX
+MOV ECX, res
+
+MOV EDX, 1
+INT 0x80
+JMP print_next
+
+print_exit :
+POP EBP
+RET
+
+; subrotinas if / while
+binop_je :
+JE binop_true
+JMP binop_false
+
+binop_jg :
+JG binop_true
+JMP binop_false
+
+binop_jl :
+JL binop_true
+JMP binop_false
+
+binop_false :
+MOV EBX, False
+JMP binop_exit
+
+binop_true :
+MOV EBX, True
+
+binop_exit :
+RET
+
+_start :
+
+PUSH EBP ; guarda o base pointer
+MOV EBP, ESP ; estabelece um novo base pointer
+
+; codigo gerado pelo compilador
+
+
+"""
+
+		end = """;
+				
+; interrupcao de saida
+POP EBP
+MOV EAX, 1
+INT 0x80
+"""
+		file = assembler.prog
+		with open(file+".asm", "w") as f:
+
+			f.write(start + assembler.string_w + end)
+
 
 
 
@@ -1009,6 +1206,8 @@ class PrePro():
 with open(sys.argv[1], "r") as file:
 
 	Parser.run(file.read())
+
+assembler.create()
 
 
 
