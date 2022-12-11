@@ -102,7 +102,7 @@ class UnOp(Node):
 
 	def Evaluate(self,st):
 
-		child = self.children[0].Evaluate()
+		child = self.children[0].Evaluate(st)
 
 
 		if child[1] == "i32":
