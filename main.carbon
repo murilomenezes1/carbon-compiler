@@ -1,13 +1,14 @@
-{
-var i: i32;
-var n: i32;
-var f: i32;
-n = 5;
-i = 2;
-f = 1;
-while (i < n + 1) {
-f = f * i;
-i = i + 1;
+fn soma(x: i32, y: i32) -> i32 {
+var a: i32;
+a = x + y;
+Print(a);
+return a;
 }
-Print(f);
+fn Main() {
+var c: i32;
+var b: i32;
+c = 3;
+b = soma(c, 4);
+Print(c);
+Print(b);
 }

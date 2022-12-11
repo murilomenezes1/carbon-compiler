@@ -3,94 +3,64 @@ import re
 
 
 
-
+func_table = {}
 class Node():
-
-	i = 0
 
 	def __init__(self,variant,nodes = []):
 
 		self.value = variant
 		self.children = nodes
 
-	def Evaluate(self):
+	def Evaluate(self,st):
 
 		pass
-
-	def newId():
-
-		Node.i += 1
-
-		return Node.i
 
 
 
 
 class BinOp(Node):
 
-	def Evaluate(self):
+	def Evaluate(self,st):
 
-		self.id = Node.newId()
-		first_child = self.children[0].Evaluate()
-		assembler.addOutput("PUSH EBX")
-		second_child = self.children[1].Evaluate()
-		assembler.addOutput("POP EAX")
+		first_child = self.children[0].Evaluate(st)
+		second_child = self.children[1].Evaluate(st)
 
 		if first_child[1] == "i32" and second_child[1] == "i32":
 
 			if self.value == "+":
 
-				assembler.addOutput("ADD EAX, EBX")
-				assembler.addOutput("MOV EBX, EAX")
-
 				return (first_child[0] + second_child[0], "i32")
 
 			elif self.value == "-":
-
-				assembler.addOutput("SUB EAX, EBX")
-				assembler.addOutput("MOV EBX, EAX")
 
 				return (first_child[0] - second_child[0], "i32")
 
 			elif self.value == "*":
 
-
-				assembler.addOutput("IMUL EBX")
-				assembler.addOutput("MOV EBX, EAX")
 				return (first_child[0] * second_child[0], "i32")
 
 			elif self.value == "/":
 
-				assembler.addOutput("IDIV EBX")
-				assembler.addOutput("MOV EBX, EAX")
 				return (first_child[0] // second_child[0], "i32")
 
 			elif self.value == "==":
 
-				assembler.addOutput("CMP EAX, EBX")
-				assembler.addOutput("CALL binop_je")
 				return (int(first_child[0] == second_child[0]), "i32")
 
 			elif self.value == ">":
 
-				assembler.addOutput("CMP EAX, EBX")
-				assembler.addOutput("CALL binop_jg")
 				return (int(first_child[0] > second_child[0]), "i32")
 
 			elif self.value == "<":
 
-				assembler.addOutput("CMP EAX, EBX")
-				assembler.addOutput("CALL binop_jl")
 				return (int(first_child[0] < second_child[0]), "i32")
 
 			elif self.value == "||":
 
-				assembler.addOutput("OR EBX, EAX")
 				return (first_child[0] or second_child[0], "i32")
 
 			elif self.value == "&&":
 
-				assembler.addOutput("AND EBX, EAX")
 				return (first_child[0] and second_child[0], "i32")
 
 			elif self.value == ".":
@@ -105,20 +75,14 @@ class BinOp(Node):
 
 			if self.value == "==":
 
-				assembler.addOutput("CMP EAX, EBX")
-				assembler.addOutput("CALL binop_je")
 				return (int(str(first_child[0]) == str(second_child[0])), "i32")
 
 			if self.value == "<":
 
-				assembler.addOutput("CMP EAX, EBX")
-				assembler.addOutput("CALL binop_jl")
 				return (int(str(first_child[0]) < str(second_child[0])),"i32")
 
 			if self.value == ">":
 
-				assembler.addOutput("CMP EAX, EBX")
-				assembler.addOutput("CALL binop_jg")
 				return (int(str(first_child[0]) > str(second_child[0])),"i32")
 
 		if first_child[1] == "String" or second_child[1] == "String":
@@ -129,8 +93,6 @@ class BinOp(Node):
 
 			if self.value == "==":
 
-				assembler.addOutput("CMP EAX, EBX")
-				assembler.addOutput("CALL binop_je")
 				return (int(first_child[0] == second_child[0]), "i32")
 
 
@@ -138,7 +100,7 @@ class BinOp(Node):
 class UnOp(Node):
 
 
-	def Evaluate(self):
+	def Evaluate(self,st):
 
 		child = self.children[0].Evaluate()
 
@@ -147,20 +109,14 @@ class UnOp(Node):
 
 			if self.value == "+":
 
-				assembler.addOutput("ADD EBX, 0")
 				return (child[0],"i32")
 
 			elif self.value == "-":
 
-				assembler.addOutput("MOV EAX, {}".format(child[0]))
-				assembler.addOutput("MOV EBX, -1")
-				assembler.addOutput("IMUL EBX")
-				assembler.addOutput("MOV EBX, EAX")
 				return (-child[0], "i32")
 
 			elif self.value == "!":
 
-				assembler.addOutput("NEG EBX")
 				return (not(child[0]), "i32")
 
 		else:
@@ -170,61 +126,56 @@ class UnOp(Node):
 
 class IntVal(Node):
 
-	def Evaluate(self):
+	def Evaluate(self,st):
 
-		assembler.addOutput("MOV EBX, " + str(self.value))
 		return (int(self.value),"i32")
 
 class StrVal(Node):
 
-	def Evaluate(self):
+	def Evaluate(self,st):
 
 		return (str(self.value),"String")
 
 class VarDec(Node):
 
-	def Evaluate(self):
+	def Evaluate(self,st):
 
 		var = self.value
 		for i in self.children:
-			SymbolTable.creator(i.value,var)
-			assembler.addOutput("PUSH DWORD 0")
+			st.creator(i.value,var)
 
 
 
 
 class NoOp(Node):
 
-	def Evaluate(self):
+	def Evaluate(self,st):
 
 		pass
 
-symbol_table = {}
 class SymbolTable():
 
-	stat = 0 
+	def __init__(self):
 
-	@staticmethod
-	def creator(var,type):
+		self.symbol_table = {}
 
-		SymbolTable.stat += 4
-		if var in symbol_table:
-			raise ValueError("Invalid ST.")
+	def creator(self,var,type):
+
+		if var in self.symbol_table:
+			raise ValueError("Invalid ST. {}".format(var))
 		else:
 
-			symbol_table[var] = [None,type, SymbolTable.stat]
+			self.symbol_table[var] = (None,type)
 
-	@staticmethod
-	def getter(k):
+	def getter(self,k):
 
-		return symbol_table[k]
+		return self.symbol_table[k]
 
-	@staticmethod
-	def setter(k,v):
+	def setter(self,k,v):
 
-		if k in symbol_table:
-			if v[1] == symbol_table[k][1]:
-				symbol_table[k][0] = v[0]
+		if k in self.symbol_table:
+			if v[1] == self.symbol_table[k][1]:
+				self.symbol_table[k] = v
 			else:
 
 				raise ValueError("Invalid Data Type in ST.")
@@ -237,212 +188,150 @@ class SymbolTable():
 
 class Identifier(Node):
 
-	def Evaluate(self):
+	def Evaluate(self,st):
 
-		st = SymbolTable.getter(self.value)
+		st_ = st.getter(self.value)
 
-		assembler.addOutput("MOV EBX, [EBP-{}]".format(st[2]))
-
-		return (st[0],st[1])
+		return (st_[0],st_[1])
 
 
 class Printer(Node):
 
-	def Evaluate(self):
+	def Evaluate(self,st):
 
-
-		print(self.children[0].Evaluate()[0])
-		assembler.addOutput("PUSH  EBX")
-		assembler.addOutput("CALL print")
-		assembler.addOutput("POP EBX")
+		print(self.children[0].Evaluate(st)[0])
 
 
 class Block(Node):
 
-	def Evaluate(self):
+	def Evaluate(self,st):
 
 		for child in self.children:
 
-			child.Evaluate()
+			res = child.Evaluate(st)
+
+			if res != None:
+
+				return res
 
 
 
 class Assignment(Node):
 
-	def Evaluate(self):
+	def Evaluate(self,st):
 
-		SymbolTable.setter(self.children[0], self.children[1].Evaluate())
-		var = SymbolTable.getter(self.children[0])[2]
-		assembler.addOutput("MOV [EBP-{}], EBX".format(var))
+		st.setter(self.children[0], self.children[1].Evaluate(st))
 
 class Reader(Node):
 
-	def __init__(self,value,children=[]):
-		super().__init__(value, children)
-
-	def Evaluate(self):
+	def Evaluate(self,st):
 		return (int(input()),"i32")
 
 class If(Node):
 
-	def Evaluate(self):
+	def Evaluate(self,st):
 
-		self.id = Node.newId()
-		assembler.addOutput("if_{}:".format(self.id))
 		first_child = self.children[0]
-		# second_child = self.children[1]
-		# third_child = self.children[2]
-		assembler.addOutput("CMP EBX, False")
+		second_child = self.children[1]
 
-		if len(self.children) > 2:
-			assembler.addOutput("JE ELSE_{}".format(self.id))
-			self.children[1].Evaluate()
-			assembler.addOutput("JMP EXIT_{}".format(self.id))
-			assembler.addOutput("ELSE_{}:".format(self.id))
-			self.children[2].Evaluate()
-			assembler.addOutput("EXIT_{}:".format(self.id))
-		else:
-			assembler.addOutput("JE EXIT_{}".format(self.id))
-			self.children[1].Evaluate()
-			assembler.addOutput("JMP EXIT_{}".format(self.id))
-			assembler.addOutput("EXIT_{}:".format(self.id))
+		if first_child.Evaluate(st):
+			second_child.Evaluate(st)
 
+		elif len(self.children) > 2:
+			self.children[2].Evaluate(st)
 
 
 class While(Node):
 
-	def Evaluate(self):
-
+	def Evaluate(self,st):
+		
 		first_child = self.children[0]
 		second_child = self.children[1]
-		
-		self.id  = Node.newId()
-		assembler.addOutput("LOOP_{}:".format(self.id))
-		first_child.Evaluate()[0]
-		assembler.addOutput("CMP EBX, False")
-		assembler.addOutput("JE EXIT_{}".format(self.id))
-		second_child.Evaluate()
-		assembler.addOutput("JMP LOOP_{}".format(self.id))
-		assembler.addOutput("EXIT_{}:".format(self.id))
 
-class assembler:
-	string_w = ""
-	prog = ""
+		while (first_child.Evaluate(st)[0]):
+			second_child.Evaluate(st)
 
-	for i in sys.argv[1]:
 
-		if i != ".":
-			prog += i
+class FuncTable:
+
+	@staticmethod
+	def creator(type, func, pointer):
+
+		if func in func_table: 
+			raise ValueError("Function already exists.")
 		else:
-			break
+
+			func_table[func] = [type,pointer]
 
 	@staticmethod
-	def addOutput(content):
-		assembler.string_w += content + "\n"
+	def getter(func):
 
-	@staticmethod
-	def create():
-		start = """; constantes
-SYS_EXIT equ 1
-SYS_READ equ 3
-SYS_WRITE equ 4
-STDIN equ 0
-STDOUT equ 1
-True equ 1
-False equ 0
+		if func not in func_table:
+			raise ValueError("Invalid Function.")
 
-segment .data
+		else:
 
-segment .bss ; variaveis
-res RESB 1
+			return func_table[func][1]
 
 
-section .text
-global _start
+class FuncDec(Node):
 
-print: ; subrotina print
+	def Evaluate(self,st):
 
-PUSH EBP ; guarda o base pointer
-MOV EBP, ESP ; estabelece um novo base pointer
+		FuncTable.creator(self.value, self.children[0], self) 
 
-MOV EAX, [EBP+8] ; 1 argumento antes do RET e EBP
-XOR ESI , ESI
+class FuncCall(Node):
 
-print_dec: ; empilha todos os digitos
-MOV EDX, 0
-MOV EBX, 0x000A
-DIV EBX
-ADD EDX, '0'
-PUSH EDX
-INC ESI ; contador de digitos
-CMP EAX, 0
-JZ print_next ; quando acabar pula
-JMP print_dec
+	def Evaluate(self,st):
 
-print_next:
-CMP ESI , 0
-JZ print_exit ; quando acabar de imprimir
-DEC ESI
+		func = self.value
 
-MOV EAX, SYS_WRITE
-MOV EBX, STDOUT
+		FuncDec = FuncTable.getter(func)
+		sym_t = SymbolTable()
 
-POP ECX
-MOV [res] , ECX
-MOV ECX, res
+		f_id = FuncDec.children[0]
+		curr = FuncDec.children[-1]
+		args = FuncDec.children[1:len(FuncDec.children)-1]
+		
+		if f_id == "Main":
 
-MOV EDX, 1
-INT 0x80
-JMP print_next
+			return curr.Evaluate(sym_t)
 
-print_exit:
-POP EBP
-RET
+		else:
 
-; subrotinas if / while
-binop_je:
-JE binop_true
-JMP binop_false
+			if (len(FuncDec.children)-2) == len(self.children):
 
-binop_jg:
-JG binop_true
-JMP binop_false
+				for x, y in zip(args, self.children):
 
-binop_jl:
-JL binop_true
-JMP binop_false
+					sym_t.creator(x.children[0], x.value)
 
-binop_false:
-MOV EBX, False
-JMP binop_exit
+					if y.value in st.symbol_table:
+						type = st.getter(y.value)[1]
 
-binop_true:
-MOV EBX, True
+						sym_t.creator(y.value, type)
+						sym_t.setter(y.value, st.getter(y.value))
+						sym_t.setter(x.children[0], st.getter(y.value))
 
-binop_exit:
-RET
+					else:
 
-_start:
+						sym_t.setter(x.children[0], y.Evaluate(sym_t))
 
-PUSH EBP ; guarda o base pointer
-MOV EBP, ESP ; estabelece um novo base pointer
+			else:
 
-; codigo gerado pelo compilador
+				raise ValueError("Invalid Function Call.")
+
+		return curr.Evaluate(sym_t)
 
 
-"""
 
-		end = """;
-				
-; interrupcao de saida
-POP EBP
-MOV EAX, 1
-INT 0x80
-"""
-		file = assembler.prog
-		with open(file+".asm", "w") as f:
+class Return(Node):
 
-			f.write(start + assembler.string_w + end)
+	def Evaluate(self,st):
+
+		return self.children.Evaluate(st)
+
+
+
 
 
 
@@ -468,7 +357,7 @@ class Tokenizer():
 		num = ""
 		text = ""
 		EON = False
-		words = ["Print", "Read","if","else","while","var","String","i32"]
+		words = ["Print", "Read","if","else","while","var","String","i32", "fn", "return"]
 
 		
 		while self.position < len(self.source) and self.source[self.position] == " ":
@@ -561,8 +450,14 @@ class Tokenizer():
 
 
 			elif self.source[self.position] == "-":
+				if self.source[self.position+1] == ">":
 
-				self.next = Token("MINUS", self.source[self.position])
+					self.next = Token("TYPEDEC", "->")
+					self.position += 1
+
+				else:
+
+					self.next = Token("MINUS", self.source[self.position])
 
 				while self.source[self.position + 1] == " ":
 					self.position += 1
@@ -800,6 +695,99 @@ class Parser():
 
 
 	@staticmethod
+	def parseProgram(token):
+		nodes = []
+
+		while token.next.data_type != "EOF":
+			nodes.append(Parser.parseDeclaration(token))
+
+		return Block("Block", nodes)
+
+
+	@staticmethod
+	def parseDeclaration(token):
+
+		if token.next.data_type == "FN":
+			children_list = []
+			token.selectNext()
+
+			if token.next.data_type == "IDENT":
+				func = token.next.value
+
+				children_list.append(func)
+				token.selectNext()
+
+				if token.next.data_type == "OPENP":
+					token.selectNext()
+
+					while token.next.data_type != "CLOSEP":
+
+						if token.next.data_type == "IDENT":
+							curr = [token.next.value]
+							token.selectNext()
+
+							while token.next.data_type == "COMMA":
+								token.selectNext()
+								if token.next.data_type == "IDENT":
+
+									curr.append(token.next.value)
+									token.selectNext()
+
+							if token.next.data_type == "COLON":
+
+								token.selectNext()
+								var_type = token.next.value
+								children_list.append(VarDec(var_type, curr))
+
+							else:
+
+								raise ValueError("Missing Type.")
+
+							if token.next.value != "String" and token.next.value != "i32":
+
+								raise ValueError("Invalid Type.")
+
+							token.selectNext()
+						if token.next.data_type == "COMMA":
+							token.selectNext()
+
+					token.selectNext()
+
+					if token.next.data_type == "TYPEDEC":
+
+						token.selectNext()
+						if token.next.value != "i32" and token.next.value != "String":
+
+							raise ValueError("Invalid Type. (func)")
+
+						functype = token.next.value
+						token.selectNext()
+
+						children_list.append(Parser.parseBlock(token))
+						output = FuncDec(func, children_list)
+
+						output.value = functype
+						return output
+
+					children_list.append(Parser.parseBlock(token))
+					return FuncDec(func, children_list)
+
+				else:
+					raise ValueError("Missing Parenthesis.")
+
+			else:
+
+				raise ValueError("Missing Function.")
+
+		else:
+
+			raise ValueError("Missing Declaration.")
+
+
+
+
+
+	@staticmethod
 	def parseBlock(token):
 
 
@@ -989,6 +977,11 @@ class Parser():
 
 				raise ValueError("Invalid var name.")
 
+		elif token.next.data_type == "RETURN":
+
+			token.selectNext()
+
+			return Return('return', Parser.parseRelEx(token))
 		else:
 
 			return Parser.parseBlock(token)
@@ -1101,8 +1094,26 @@ class Parser():
 
 		elif token.next.data_type == "IDENT":
 
-			output = Identifier(token.next.value)
+			ident_ = token.next.value
+			output = Identifier(ident_)
 			token.selectNext()
+
+
+			if token.next.data_type == "OPENP":
+
+				args = []
+				token.selectNext()
+
+				while token.next.data_type != "CLOSEP":
+
+					args.append(Parser.parseRelEx(token))
+
+					if token.next.data_type == "COMMA":
+
+						token.selectNext()
+
+				output = FuncCall(ident_, args)
+				token.selectNext()
 
 
 		elif token.next.data_type == "READ":
@@ -1172,12 +1183,13 @@ class Parser():
 		token = Tokenizer(string)
 		token.selectNext()
 
-		result = Parser.parseBlock(token)
+		result = Parser.parseProgram(token)
+		result.children.append(FuncCall("Main",[]))
 
 		if result != None and token.next.data_type == "EOF":
 			
-			
-			result.Evaluate()
+			st = SymbolTable
+			result.Evaluate(st)
 
 		else:
 
@@ -1206,8 +1218,6 @@ class PrePro():
 with open(sys.argv[1], "r") as file:
 
 	Parser.run(file.read())
-
-assembler.create()
 
 
 
